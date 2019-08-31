@@ -3,8 +3,9 @@ from math import pi
 
 class Nube2(Nube):
 	def __init__(self, vol, forma, humedad, edad=1, color='blanco', *args, **kwargs):
-		super(Nube2, self).__init__()
-		self.color = self.color
+		super(Nube2, self).__init__(vol, forma, humedad, edad)
+		self.color = color
+		print(self)
 		self.vol += 10
 		self.humedad = self.humedad**pi
 
@@ -15,10 +16,7 @@ class Nube2(Nube):
 		self.color = colores[i]
 		print('el color previo era {} y se cambió a {}'.format(viejo, self.color))
 
-
-def prueba2(*args):
-	color = input('de qué color es la nube: ')
-	nube = Nube2(*args, color=color)
-	nube.cambiar_color()
-
-prueba2(*pedir_valores())
+	def __str__(self):
+		string = super(Nube2, self).__str__()
+		string += '\ncolor: {}'.format(self.color)
+		return string
