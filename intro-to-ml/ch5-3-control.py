@@ -39,7 +39,7 @@ shuffle-split cross-validation
     - ShuffleSplit has stratified version StratifiedShuffleSplit
 
 cross-validation with groups
-    - 
+    - specifies groups which shouldn't be split
 '''
 
 # import KFold splitter and instantiate it with desired folds
@@ -77,3 +77,5 @@ mglearn.plots.plot_shuffle_split()
 shuffle_split = ShuffleSplit(test_size=0.5, train_size=0.5, n_splits=10)
 scores = cross_val_score(logreg, iris.data, iris.target, cv=shuffle_split)
 print("Shuffle-split cross-validation scores:\n{}".format(scores))
+
+#
