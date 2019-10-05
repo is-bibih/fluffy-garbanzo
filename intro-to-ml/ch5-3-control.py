@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import mglearn
 from sklearn.model_selection import KFold, LeaveOneOut, cross_val_score, \
-    ShuffleSplit
-from sklearn.datasets import load_iris
+    ShuffleSplit, GroupKFold
+from sklearn.datasets import load_iris, make_blobs
 from sklearn.linear_model import LogisticRegression
 
 iris = load_iris()
@@ -40,6 +40,9 @@ shuffle-split cross-validation
 
 cross-validation with groups
     - specifies groups which shouldn't be split
+        - for exmple, faces from the same person would all be
+          either in the training or in the test set, so that
+          the model can be evaluated more accurately
 '''
 
 # import KFold splitter and instantiate it with desired folds
@@ -78,4 +81,14 @@ shuffle_split = ShuffleSplit(test_size=0.5, train_size=0.5, n_splits=10)
 scores = cross_val_score(logreg, iris.data, iris.target, cv=shuffle_split)
 print("Shuffle-split cross-validation scores:\n{}".format(scores))
 
-#
+# cross-validation with groups
+# create synthetic dataset
+X, y = make_blobs(n_samples=12, random_state=0)
+# grouping given by groups array (first three samples belong
+# to first groups, then the next four, etc.)
+groups = [0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 3]
+scores = cross_val_score(logreg, X, y, groups, cv=GroupKFold(n_splits=3))
+print("Cross-validation scores: \n{}".format(scores))
+# look at the groups
+# mglearn.plots.plot_label_kfold()
+# plt.show()
