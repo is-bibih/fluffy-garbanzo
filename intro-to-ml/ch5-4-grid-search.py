@@ -4,7 +4,7 @@ import pandas as pd
 import mglearn
 from sklearn.svm import SVC
 from sklearn.datasets import load_iris
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_val_score
 
 iris = load_iris()
 
@@ -27,6 +27,13 @@ grid search
       - once the best parameters are found with the validation set,
         a model can be built and trained on both the training and
         the validation data, to get as much information as possible
+
+grid search with cross-validation
+    - use cross-validation for better generalization
+    - simple train-test-validation split might make the model
+      generalize worse
+    - very resource-intensive
+    - it can be implemented with GridSearchCV
 '''
 
 # naive grid search implementation
@@ -86,3 +93,25 @@ test_score = svm.score(X_test, y_test)
 print("best score on validation: {:.2f}".format(best_score))
 print("best parameters: {}".format(best_parameters))
 print("Test set score with best parameters: {:.2f}".format(test_score))
+
+# grid search with cross-validation
+
+best_score = 0
+
+for gamma in [0.001, 0.01, 0.1, 1, 10, 100]:
+    for C in [0.001, 0.01, 0.1, 1, 10, 100]:
+        svm = SVC(gamma=gamma, C=C)
+        # do cross-validation
+        scores = cross_val_score(svm, X_trainval, y_trainval, cv=5)
+        score = np.mean(scores)
+        if score > best_score:
+            best_score = score
+            best_parameters = {'C': C, 'gamma': gamma}
+svm = SVC(**best_parameters)
+svm.fit(X_trainval, y_trainval)
+
+# grid search with cross-validation in GridSearchCV
+# use a dict for the arguments
+
+param_grid = {'C': [0.001, 0.01, 0.1, 1, 10, 100],
+              'gamma': [0.001, 0.01, 0.1, 1, 10, 100]}
