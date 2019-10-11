@@ -4,7 +4,8 @@ import pandas as pd
 import mglearn
 from sklearn.svm import SVC
 from sklearn.datasets import load_iris
-from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.model_selection import train_test_split, cross_val_score, \
+    GridSearchCV
 
 iris = load_iris()
 
@@ -34,6 +35,23 @@ grid search with cross-validation
       generalize worse
     - very resource-intensive
     - it can be implemented with GridSearchCV
+        - it looks for the best parameters and automatically fits a
+          new model on the whole dataset
+        - best parameters are stored in the best_params_ attribute
+        - mean accuracy for best parameters is in best_score_
+            - it is only on the training set, not necessarily accurate
+        - look at results in cv_results_attribute
+        - it can take a list of dictionaries to look for parameters
+          for different models (which use different parameters)
+    - usually a good idea to start with a very coarse grid and
+      then refine the search
+
+other things with cross-validation
+    - GridSearchCV uses stratified k-fold cross-validation for
+      classification and k-fold cross-validation for regression
+        - other splitters can be passed as cv argument
+    - to get a single split (for very large sets or slow models),
+      use ShuffleSplit or StratifiedShuffleSplit with n_iter=1
 '''
 
 # naive grid search implementation
@@ -115,3 +133,69 @@ svm.fit(X_trainval, y_trainval)
 
 param_grid = {'C': [0.001, 0.01, 0.1, 1, 10, 100],
               'gamma': [0.001, 0.01, 0.1, 1, 10, 100]}
+# the grid_search object behaves like a normal classifier
+grid_search = GridSearchCV(SVC(), param_grid, cv=5)
+
+# the data should be split to avoid overfitting anyways
+X_train, X_test, y_train, y_test = train_test_split(
+    iris.data, iris.target, random_state=0)
+
+# train
+grid_search.fit(X_train, y_train)
+
+print("Test set score: {:.2f}".format(grid_search.score(X_test, y_test)))
+print("Best parameters: {}".format(grid_search.best_params_))
+print("Best cross-validation score: {:.2f}".format(grid_search.best_score_))
+
+# access the actual estimator
+print("Best estimator:\n{}".format(grid_search.best_estimator_))
+
+# look at results as a DataFrame
+results = pd.DataFrame(grid_search.cv_results_)
+print(results.head())
+
+# look at results in a heat map
+scores = np.array(results.mean_test_score).reshape(6, 6)
+mglearn.tools.heatmap(scores, xlabel='gamma', xticklabels=param_grid['gamma'],
+                      ylabel='C', yticklabels=param_grid['C'], cmap='viridis')
+
+# look at bad grid searches
+fig, axes = plt.subplots(1, 3, figsize=(13, 5))
+param_grid_linear = {'C': np.linspace(1, 2, 6),
+                     'gamma': np.linspace(1, 2, 6)}
+param_grid_one_log = {'C': np.linspace(1, 2, 6),
+                      'gamma': np.logspace(-3, 2, 6)}
+param_grid_range = {'C': np.logspace(-3, 2, 6),
+                    'gamma': np.logspace(-7, -2, 6)}
+
+for param_grid, ax in zip([param_grid_linear, param_grid_one_log,
+                           param_grid_range], axes):
+    grid_search = GridSearchCV(SVC(), param_grid, cv=5)
+    grid_search.fit(X_train, y_train)
+    scores = grid_search.cv_results_['mean_test_score'].reshape(6, 6)
+    # plot the mean cross-validation scores
+    scores_image = mglearn.tools.heatmap(
+        scores, xlabel='gamma', ylabel='C', xticklabels=param_grid['gamma'],
+        yticklabels=param_grid['C'], cmap="viridis", ax=ax)
+    plt.colorbar(scores_image, ax=axes.tolist())
+# plt.colorbar(scores_image, ax=axes.tolist())
+# plt.show()
+
+# a grid search with both kernel and parameters
+
+param_grid = [{'kernel': ['rbf'],
+               'C': [0.001, 0.01, 0.1, 1, 1, 10, 100],
+               'gamma': [0.001, 0.01, 0.1, 1, 1, 10, 100]},
+              {'kernel': ['linear'],
+               'C': [0.001, 0.01, 0.1, 1, 1, 10, 100]}]
+print("List of grids:\n{}".format(param_grid))
+
+grid_search = GridSearchCV(SVC(), param_grid, cv=5)
+grid_search.fit(X_train, y_train)
+print("Best parameters: {}".format(grid_search.best_params_))
+print("Best cross-validation score: {:.2f}".format(grid_search.best_score_))
+
+# look at results
+results = pd.DataFrame(grid_search.cv_results_)
+# use transposed table so it fits better
+print(results.T)
