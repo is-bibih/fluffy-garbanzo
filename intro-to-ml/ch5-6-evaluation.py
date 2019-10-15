@@ -7,7 +7,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.dummy import DummyClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, f1_score, \
+    classification_report
 
 '''
 evaluation metrics and scoring
@@ -40,6 +41,16 @@ confusion matrices
     - the columns represent the class predictions made by the model
     - entries on the main diagonal correspont to correct
       clasifications (true positives and negatives)
+
+confusion matrices summaries:
+    - accuracy = (tn + tp)/total
+    - precision aka positive predictive value = tp/(tp + fp)
+        - looks for low amount of false positives
+    - recall aka sensitivity aka hit rate aka tp rate = tp/(tp + fn)
+        - avoiding false negatives
+    - f-score = 2*(precision*recall)/(precision + recall)
+        - this one in specific is the f_1-score
+    - classification_report gets precision, recall and f1-score
 '''
 
 digits = load_digits()
@@ -99,8 +110,22 @@ def compare(y_test, pred_most_frequent, pred_dummy, pred_tree,
     print("\nLogReg:")
     print(confusion_matrix(y_test, pred_logreg))
 
+def f1_scores(y_test, pred_most_frequent, pred_dummy, pred_tree,
+            pred_logreg):
+    # most frequent gets an error because there were no
+    # positive predictions (division by 0)
+    print("f1 score most frequent: {:.2f}".format(
+        f1_score(y_test, pred_most_frequent)))
+    print("f1 score dummy: {:.2f}".format(
+        f1_score(y_test, pred_dummy)))
+    print("f1 score tree: {:.2f}".format(
+        f1_score(y_test, pred_tree)))
+    print("f1 score logreg: {:.2f}".format(
+        f1_score(y_test, pred_logreg)))
+
 pred_most_frequent = imbalanced(X_train, X_test, y_train, y_test)
 pred_tree = decision_tree(X_train, X_test, y_train, y_test)
 pred_dummy, pred_logreg = other_dummy(X_train, X_test, y_train, y_test)
-confuse(y_test, pred_logreg)
-compare(y_test, pred_most_frequent, pred_dummy, pred_tree, pred_logreg)
+# confuse(y_test, pred_logreg)
+# compare(y_test, pred_most_frequent, pred_dummy, pred_tree, pred_logreg)
+f1_scores(y_test, pred_most_frequent, pred_dummy, pred_tree, pred_logreg)
