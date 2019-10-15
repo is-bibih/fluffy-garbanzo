@@ -50,7 +50,12 @@ confusion matrices summaries:
         - avoiding false negatives
     - f-score = 2*(precision*recall)/(precision + recall)
         - this one in specific is the f_1-score
+        - picking the positive class can have a big impact
+          on the metrics
     - classification_report gets precision, recall and f1-score
+        - it produces one line per class
+        - support is the amount of samples according to ground truth
+        - the last row shows a weighted average
 '''
 
 digits = load_digits()
@@ -62,7 +67,9 @@ X_train, X_test, y_train, y_test = train_test_split(
 def imbalanced(X_train, X_test, y_train, y_test):
     # look at how dummy classifier gets great score
     dummy_majority = DummyClassifier(
+        strategy='most_frequent').fit(X_train, DummyClassifier(
         strategy='most_frequent').fit(X_train, y_train)
+    pred_most_frequent = dummy_majority.predict(X_test) y_train)
     pred_most_frequent = dummy_majority.predict(X_test)
     print("Unique predicted labels: {}".format(np.unique(pred_most_frequent)))
     print("Test score: {:.2f}".format(dummy_majority.score(X_test, y_test)))
@@ -123,9 +130,21 @@ def f1_scores(y_test, pred_most_frequent, pred_dummy, pred_tree,
     print("f1 score logreg: {:.2f}".format(
         f1_score(y_test, pred_logreg)))
 
+def clas_report(y_test, pred_most_frequent, pred_dummy, pred_tree,
+            pred_logreg):
+    print(classification_report(y_test, pred_most_frequent,
+                                target_names=["not nine", "nine"]))
+    print(classification_report(y_test, pred_dummy,
+                                target_names=["not nine", "nine"]))
+    print(classification_report(y_test, pred_tree,
+                                target_names=["not nine", "nine"]))
+    print(classification_report(y_test, pred_logreg,
+                                target_names=["not nine", "nine"]))
+
 pred_most_frequent = imbalanced(X_train, X_test, y_train, y_test)
 pred_tree = decision_tree(X_train, X_test, y_train, y_test)
 pred_dummy, pred_logreg = other_dummy(X_train, X_test, y_train, y_test)
 # confuse(y_test, pred_logreg)
 # compare(y_test, pred_most_frequent, pred_dummy, pred_tree, pred_logreg)
 f1_scores(y_test, pred_most_frequent, pred_dummy, pred_tree, pred_logreg)
+clas_report(y_test, pred_most_frequent, pred_dummy, pred_tree, pred_logreg)
