@@ -174,7 +174,8 @@ def uncertainty():
     # for both classes
     print(classification_report(y_test, svc.predict(X_test)))
     # there's a smaller recall and mixed precision for class 1,
-    # since the classifier focuses on 0 since it's much larger
+    # since the classifrom sklearn.svm import SVC
+fier focuses on 0 since it's much larger
 
     y_pred_lower_threshold = svc.decision_function(X_test) > -0.8
     print(classification_report(y_test, y_pred_lower_threshold))
