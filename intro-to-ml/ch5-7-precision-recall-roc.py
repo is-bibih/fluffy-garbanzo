@@ -6,8 +6,8 @@ from sklearn.datasets import load_digits, make_blobs
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import precision_recall_curve, \
-    f1_score, average_precision_score
+from sklearn.metrics import precision_recall_curve, f1_score, \
+    average_precision_score, roc_curve, roc_auc_score
 
 '''
 precision-recall curves and roc curves
@@ -35,14 +35,44 @@ precision-recall curve
         - use the average_precision_score, which takes the result
           of decision_function or predict_proba, not predict
         - it is always between 0 (worst) and 1 (best)
+        - the average precision of a random classifier is the fraction
+          of positive samples in the dataset
 
-receiver operating characteristics (roc) curve
+receiver operating characteristics (roc) curve and auc
+    - shows the false positive rate against the true positive
+      rate (recall)
+        - fpr = fp/(fp + tn)
+        - tpr = tp/(tp + fn)
+    - the ideal curve is close to the top left; high recall with
+      a low false positive rate
+        - the point closest to the top left might be a better
+          operating point than the default
+        - the threshold should not be picked on the test set, it
+          should be on a separate validation set
+    - it is usually summarized with the area under the curve
+      (referred to as AUC)
+        - computed with roc_auc_score
+        - random predictions yield an auc of 0.5, even for unbalanced
+          datasets
+            - this makes it a better metric for unbalanced
+              classification than accuracy
+        - it is equivalent to the probability that a randomly picked
+          positive sample will have a higher score according to the
+          classifier than a point from the negative class
+        - a perfect score of 1 means all positive points are classified
+          correctly
 '''
 
 X, y = make_blobs(n_samples=(4000, 500),
                   cluster_std=[7.0, 2], random_state=22)
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, random_state=0)
+
+digits = load_digits()
+y9 = digits.target == 9
+
+X9_train, X9_test, y9_train, y9_test = train_test_split(
+    digits.data, y9, random_state=0)
 
 # look at precision vs recall curves for an svc and a random forest
 def pr_curve(X_train, X_test, y_train, y_test, show=True):
@@ -81,13 +111,14 @@ def pr_curve(X_train, X_test, y_train, y_test, show=True):
 
     return rf, svc
 
-
+# look at f1 scores
 def f1_scores(rf, svc, X_test, y_test):
     print("f1_score of random forest: {:.3f}".format(
         f1_score(y_test, rf.predict(X_test))))
     print("f1_score of svc: {:.3f}".format(
         f1_score(y_test, svc.predict(X_test))))
 
+# look at average precision
 def average_precision(rf, svc, X_test, y_test):
     ap_rf = average_precision_score(
         y_test, rf.predict_proba(X_test)[:, 1])
@@ -96,6 +127,60 @@ def average_precision(rf, svc, X_test, y_test):
     print("Average precision of random forest: {:.3f}".format(ap_rf))
     print("Average precision of svc: {:.3f}".format(ap_svc))
 
-rf, svc = pr_curve(X_train, X_test, y_train, y_test, show=False)
-f1_scores(rf, svc, X_test, y_test)
-average_precision(rf, svc, X_test, y_test)
+# look at roc curves
+def roc(rf, svc, X_test, y_test):
+    fpr, tpr, thresholds = roc_curve(
+        y_test, svc.decision_function(X_test))
+    fpr_rf, tpr_rf, thresholds_rf = roc_curve(
+        y_test, rf.predict_proba(X_test)[:, 1])
+
+    plt.plot(fpr, tpr, label="ROC Curve SVC")
+    plt.plot(fpr_rf, tpr_rf, label="ROC Curve RF")
+
+    plt.xlabel("FPR")
+    plt.ylabel("TPR (recall)")
+
+    # find threshold closest to 0
+    close_zero = np.argmin(np.abs(thresholds))
+    close_default_rf = np.argmin(np.abs(thresholds_rf - 0.5))
+
+    plt.plot(fpr[close_zero], tpr[close_zero], 'o', markersize=10,
+             label="threshold zero SVC", fillstyle="none", c='k', mew=2)
+    plt.plot(fpr[close_default_rf], tpr[close_default_rf],
+             '^', markersize=10, label="threshold 0.5 RF",
+             fillstyle="none", c='k', mew=2)
+
+    plt.legend(loc=4)
+    plt.show()
+
+# look at area under the curve
+def auc(rd, svc, X_test, y_test):
+    rf_auc = roc_auc_score(y_test, rf.predict_proba(X_test)[:, 1])
+    svc_auc = roc_auc_score(y_test, svc.decision_function(X_test))
+    print("AUC for random forest: {:.3f}".format(rf_auc))
+    print("AUC for svc: {:.3f}".format(svc_auc))
+
+def gammas(X_train, X_test, y_train, y_test):
+    plt.figure()
+
+    for gamma in [1, 0.05, 0.01]:
+        svc = SVC(gamma=gamma).fit(X_train, y_train)
+        accuracy = svc.score(X_test, y_test)
+        auc = roc_auc_score(y_test, svc.decision_function(X_test))
+        fpr, tpr, _ = roc_curve(y_test, svc.decision_function(X_test))
+        print("gamma = {:.2f}  accuracy = {:.2f}  AUC = {:.2f}".format(
+            gamma, accuracy, auc))
+        plt.plot(fpr, tpr, label="gamma={:.3f}".format(gamma))
+    plt.xlabel("FPR")
+    plt.ylabel("TPR")
+    plt.xlim(-0.01, 1)
+    plt.ylim(0, 1.02)
+    plt.legend(loc="best")
+    plt.show()
+
+# rf, svc = pr_curve(X_train, X_test, y_train, y_test, show=False)
+# f1_scores(rf, svc, X_test, y_test)
+# average_precision(rf, svc, X_test, y_test)
+# roc(rf, svc, X_test, y_test)
+# auc(rf, svc, X_test, y_test)
+gammas(X9_train, X9_test, y9_train, y9_test)
