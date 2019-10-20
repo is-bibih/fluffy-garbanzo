@@ -2,13 +2,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import mglearn
-from sklearn.metrics import precision_recall_curve
-from sklearn.datasets import load_digits
+from sklearn.datasets import load_digits, make_blobs
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
-from mglearn.datasets import make_blobs
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import f1_score
+from sklearn.metrics import precision_recall_curve, \
+    f1_score, average_precision_score
 
 '''
 precision-recall curves and roc curves
@@ -31,9 +30,16 @@ precision-recall curve
     - the closer the curve is to the upper right corner, the better
     - different classifiers can work well in different parts of the
       curve (different operating points)
+    - a way to summarize the precision-recall curve is through the
+      area under the curve, aka the average precision
+        - use the average_precision_score, which takes the result
+          of decision_function or predict_proba, not predict
+        - it is always between 0 (worst) and 1 (best)
+
+receiver operating characteristics (roc) curve
 '''
 
-X, y = make_blobs(n_samples=(4000, 500), centers=2,
+X, y = make_blobs(n_samples=(4000, 500),
                   cluster_std=[7.0, 2], random_state=22)
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, random_state=0)
@@ -82,5 +88,14 @@ def f1_scores(rf, svc, X_test, y_test):
     print("f1_score of svc: {:.3f}".format(
         f1_score(y_test, svc.predict(X_test))))
 
+def average_precision(rf, svc, X_test, y_test):
+    ap_rf = average_precision_score(
+        y_test, rf.predict_proba(X_test)[:, 1])
+    ap_svc = average_precision_score(
+        y_test, svc.decision_function(X_test))
+    print("Average precision of random forest: {:.3f}".format(ap_rf))
+    print("Average precision of svc: {:.3f}".format(ap_svc))
+
 rf, svc = pr_curve(X_train, X_test, y_train, y_test, show=False)
 f1_scores(rf, svc, X_test, y_test)
+average_precision(rf, svc, X_test, y_test)
