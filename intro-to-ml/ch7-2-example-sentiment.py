@@ -20,3 +20,11 @@ print("text_train[1]:\n{}".format(text_train[1]))
 
 # clean data from its weird html breaks
 text_train = [doc.replace(b"<br />", b" ") for doc in text_train]
+
+# look at balanced class
+print("Samples per class (training): {}".format(np.bincount(y_train)))
+
+# look at number of documents and samples per class
+# reviews_test
+print("Number of documents in test data: {}".format(len(text_test)))
+print("Samples per class (test): {}".format(np.bincount(y_test)))
