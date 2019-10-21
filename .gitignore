@@ -3,3 +3,6 @@
 
 # pycaches
 **/__pycache__/
+
+# dataset de imdb
+data/*
