@@ -43,6 +43,11 @@ term frequency-inverse document frecuency (tf-idf)
         - includes stopwords and domanin-specific words (movie, actor,
           story, etc)
 
+investigating model coefficients
+    - there's a lot of coefficients, so it's hard to look at all of
+      them at the same time
+    - it's possible to look at the features with the largest
+      coefficients
 '''
 
 def only_load():
@@ -62,34 +67,50 @@ def only_load():
 
     return text_train, text_test, y_train, y_test
 
-def make_pipe_tfidf(text_train, text_test, y_train, y_test):
+def make_pipe_tfidf(text_train, text_test, y_train, y_test, show=True):
     pipe = make_pipeline(TfidfVectorizer(min_df=5, norm=None),
                          LogisticRegression())
     param_grid = {'logisticregression__C': [0.001, 0.01, 0.1, 1, 10]}
 
     grid = GridSearchCV(pipe, param_grid, cv=5)
     grid.fit(text_train, y_train)
-    print("Best cross-validation score: {:.2f}".format(grid.best_score_))
+    if show:
+        print("Best cross-validation score: {:.2f}".format(
+            grid.best_score_))
 
     # get TfidfVectorizer from pipeline
-    vectorizer = grid.best_estimator_.named_steps["tfidvectorizer"]
+    vectorizer = grid.best_estimator_.named_steps["tfidfvectorizer"]
     # transform the training dataset
     X_train = vectorizer.transform(text_train)
-    # find max value for each feature in the dataset
-    max_value = X_train.max(axis=0).toarray().ravel()
-    sorted_by_tfidf = max_value.argsort()
+    if show:
+        # find max value for each feature in the dataset
+        max_value = X_train.max(axis=0).toarray().ravel()
+        sorted_by_tfidf = max_value.argsort()
     # get feature names
     feature_names = np.array(vectorizer.get_feature_names())
 
-    print("features with lowest tfidf:\n{}".format(
-        feature_names[sorted_by_tfidf[:20]]))
-    print("Features with highest tfidf:\n{}".format(
-        feature_names[sorted_by_tfidf[-20:]]))
+    if show:
+        print("features with lowest tfidf:\n{}".format(
+            feature_names[sorted_by_tfidf[:20]]))
+        print("Features with highest tfidf:\n{}".format(
+            feature_names[sorted_by_tfidf[-20:]]))
 
-    # looks at words with low inverse document frequency (less important)
-    sorted_by_tfidf = np.argsort(vectorizer.idf_)
-    print("Features with lowest idf:\n{}".format(
-        feature_names[sorted_by_tfidf[:100]]))
+        # looks at words with low inverse document frequency
+        # (less important)
+        sorted_by_tfidf = np.argsort(vectorizer.idf_)
+        print("Features with lowest idf:\n{}".format(
+            feature_names[sorted_by_tfidf[:100]]))
+
+    return grid, feature_names
+
+def see_coefficients(grid, feature_names):
+    # look at coefficients from the best estimator
+    mglearn.tools.visualize_coefficients(
+        grid.best_estimator_.named_steps["logisticregression"].coef_,
+        feature_names, n_top_features=40)
+    plt.show()
 
 text_train, text_test, y_train, y_test = only_load()
-make_pipe_tfidf(text_train, text_test, y_train, y_test)
+grid, feature_names = make_pipe_tfidf(text_train, text_test,
+    y_train, y_test, show=True)
+see_coefficients(grid, feature_names)
