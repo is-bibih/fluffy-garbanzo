@@ -90,4 +90,13 @@ def imdb_ngram(text_train, y_train, show=True):
             coef, feature_names, n_top_features=40)
         plt.show()
 
+        # look at only trigrams
+        # find the 3-gram features
+        mask = np.array([len(feature.split(" ")) \
+            for feature in feature_names]) == 3
+        # visualize only the trigrams
+        mglearn.tools.visualize_coefficients(coef.ravel()[mask],
+                                             feature_names[mask],
+                                             n_top_features=40)
+
 example_ngram()
