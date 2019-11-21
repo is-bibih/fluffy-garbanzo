@@ -6,3 +6,6 @@
 
 # dataset de imdb
 data
+
+# key del chatbot
+/chatbot_nao/brainvue-ufxcwl-*.json
